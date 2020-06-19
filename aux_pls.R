@@ -85,7 +85,7 @@ doperm = function(perm, y.train, X.train, X.test, maxcomp, subject, group, filte
     # only keep these for the unpermuted model
     K.iter = c(K.iter, K.opt)
     eta.iter = c(eta.iter, mycv$eta.opt)
-    coefs.full = 0*nonzero
+    coefs.full = 0*nonzero #TODO check that! should be the number of predictors
     coefs.full[nonzero][filtered] = coef.spls(mypls)
     coefs.iter = cbind(coefs.iter, coefs.full)
     
@@ -127,7 +127,7 @@ do_crossvalidate_spls_covars_perm_par = function(fold_index, input, maxcomp, clu
   if (!is.null(group)) group = input$group[-fold]
   
   #when there are a lot of predictors, reduce the number
-  nonzero = apply(X, 2, sd) > 0
+  nonzero = apply(X, 2, sd, na.rm= T) > 0
   
   print(paste("Fold index", fold_index))
   
@@ -137,19 +137,9 @@ do_crossvalidate_spls_covars_perm_par = function(fold_index, input, maxcomp, clu
   y.train = y[-fold]  
   y.test = y.test.orig = y[fold]
   
-  
-  if(!is.null(covars)){
-    # deconfound
-    myform = as.formula(paste("y.train ~ 1 + ", paste(colnames(covars), collapse=" + ")))  
-    
-    covars.train = as.data.frame(covars[-fold, , drop=FALSE])
-    covars.test = as.data.frame(covars[fold, , drop=FALSE])
-    
-    #remove the info/variance of the cov features from Y
-    mycovarmod = lm(myform, data = covars.train)
-    y.train = y.train - predict(mycovarmod, covars.train)
-    y.test = y.test.orig - predict(mycovarmod, covars.test)
-  }
+  #imput missing data in X
+  X.train = missForest(X.train, variablewise = TRUE, verbose = TRUE)$ximp
+  X.test = missForest(X.test, variablewise = TRUE, verbose = TRUE)$ximp
   
   # demean and scale only according to the train data
   mu = colMeans(X.train) 
@@ -161,6 +151,19 @@ do_crossvalidate_spls_covars_perm_par = function(fold_index, input, maxcomp, clu
     X.train[, j] = (X.train[, j] - mu[j])/sigma[j]     
     X.test[, j] = (X.test[, j] - mu[j])/sigma[j]    
   }
+  
+  
+  # deconfound
+  myform = as.formula(paste("y.train ~ 1 + ", paste(colnames(covars), collapse=" + ")))  
+  
+  covars.train = as.data.frame(covars[-fold, , drop=FALSE])
+  covars.test = as.data.frame(covars[fold, , drop=FALSE])
+  
+  #remove the info/variance of the cov features from Y
+  mycovarmod = lm(myform, data = covars.train)
+  y.train = y.train - predict(mycovarmod, covars.train)
+  y.test = y.test.orig - predict(mycovarmod, covars.test)
+  
   
   # run permutations
   results_list = foreach(perm = seq(NPERM), .packages=c('spls'), 
