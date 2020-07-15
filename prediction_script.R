@@ -27,8 +27,8 @@ source(paste(getwd(),"aux_pls.R", sep = "/"))
 
 NPROCS = detectCores() ;
 maxcomp = 178 # max number of k in spls. should take all predictors as we don't have too many 
-NPERM = 500; 
-NITER = 500; #bagging
+NPERM = 100; 
+NITER = 100; #bagging
 N_FOLDS = 10
 
 
@@ -51,7 +51,7 @@ for (i in 1:5){
   folds = createFolds(x$PHQ9_Sum_sqrt, k = N_FOLDS)
   
   cv = foreach(fold_index = seq(length(folds))) %do%        
-    do_crossvalidate_spls_covars_perm_par(fold_index, list(X = x[,12:190], y = x$PHQ9_Sum_sqrt, covars = x[,5:11], 
+    do_crossvalidate_spls_covars_perm_par(fold_index, list(X = x[,12:189], y = x$PHQ9_Sum_sqrt, covars = x[,5:11], 
                                                              folds = folds
                                                            # ,subject = mydata.exp$Subject[valid.rows]
                                                            ), 

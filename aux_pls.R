@@ -64,6 +64,9 @@ doperm = function(perm, y.train, X.train, X.test, maxcomp, subject, group, filte
     X.train.sample = X.train[mysample.b, nonzero]
     y.train.sample = y.train[mysample][mysample.b]
     
+    nonzero.b = apply(X.train.sample, 2, sd, na.rm= T) > 0
+    X.train.sample = X.train.sample[, nonzero.b]
+    
     # feature selection
     filtered = apply(X.train.sample, 2, function(x) cor.test(y.train.sample, x)$p.value < filterthr)
     
@@ -77,7 +80,7 @@ doperm = function(perm, y.train, X.train, X.test, maxcomp, subject, group, filte
                    eta = mycv$eta.opt, 
                    K = K.opt, scale.x = F  )
     
-    y.pred.iter = cbind(y.pred.iter, predict(mypls, X.test[, nonzero][, filtered]))
+    y.pred.iter = cbind(y.pred.iter, predict(mypls, X.test[, nonzero][, nonzero.b][, filtered]))
     y.train.pred.iter = cbind(y.train.pred.iter, predict(mypls, X.train.sample[, filtered]))
     
     nfeatures.iter[iter] = sum(filtered)
@@ -86,7 +89,7 @@ doperm = function(perm, y.train, X.train, X.test, maxcomp, subject, group, filte
     K.iter = c(K.iter, K.opt)
     eta.iter = c(eta.iter, mycv$eta.opt)
     coefs.full = 0*nonzero #TODO check that! should be the number of predictors
-    coefs.full[nonzero][filtered] = coef.spls(mypls)
+    coefs.full[nonzero][nonzero.b][filtered] = coef.spls(mypls)
     coefs.iter = cbind(coefs.iter, coefs.full)
     
   } # iter
@@ -138,8 +141,8 @@ do_crossvalidate_spls_covars_perm_par = function(fold_index, input, maxcomp, clu
   y.test = y.test.orig = y[fold]
   
   #imput missing data in X
-  X.train = missForest(X.train, variablewise = TRUE, verbose = TRUE)$ximp
-  X.test = missForest(X.test, variablewise = TRUE, verbose = TRUE)$ximp
+  X.train = missForest(X.train, variablewise = TRUE)$ximp
+  X.test = missForest(X.test, variablewise = TRUE)$ximp
   
   # demean and scale only according to the train data
   mu = colMeans(X.train) 
@@ -164,6 +167,10 @@ do_crossvalidate_spls_covars_perm_par = function(fold_index, input, maxcomp, clu
   y.train = y.train - predict(mycovarmod, covars.train)
   y.test = y.test.orig - predict(mycovarmod, covars.test)
   
+  cat("\nNA in train", which(is.na(X.train)))
+  cat("NA in test", which(is.na(X.test)))
+  cat("NA in Y train", which(is.na(y.train)))
+  cat("NA in Y test\n", which(is.na(y.test)))
   
   # run permutations
   results_list = foreach(perm = seq(NPERM), .packages=c('spls'), 
