@@ -1,10 +1,3 @@
-library("readr")
-library("psych")
-# library("car")
-# library("rcompanion")
-library("Amelia")
-library("qgraph")
-library("missForest")
 
 #read the CSVs 
 PHQ_Data = read_csv("Data/PHQ9_file_for_Elina_with_PNC_FH.csv")
@@ -24,9 +17,9 @@ summary(Y_bucket)
 #remove empty rows
 Y_bucket = Y_bucket[!is.na(Y_bucket$Depression_mod_above_at_phq) & !is.na(Y_bucket$PHQ9_Sum),]
 
-# #the PHQ9_Sum is skewed
+#the PHQ9_Sum is skewed
 # plotNormalHistogram(Y_bucket$PHQ9_Sum)
-# 
+
 # #check log as the transformation
 # plotNormalHistogram(log(Y_bucket$PHQ9_Sum+1), main= "log")
 # qqnorm(log(Y_bucket$PHQ9_Sum+1),main = "log")
@@ -45,6 +38,7 @@ Y_bucket = Y_bucket[!is.na(Y_bucket$Depression_mod_above_at_phq) & !is.na(Y_buck
 
 #sqrt had the best results
 Y_bucket$PHQ9_Sum_sqrt = sqrt(Y_bucket$PHQ9_Sum)
+# plotNormalHistogram(Y_bucket$PHQ9_Sum_sqrt)
 
 ##########################################
 # Covariates
@@ -74,7 +68,7 @@ PNC_cov$sex =  PNC_cov$sex -1
 summary(PNC_cov)
 
 #imputation 
-set.seed(124)
+# set.seed(124)
 amelia_fit <- amelia(PNC_cov,m=1, idvars=c("bblid"))
 summary(amelia_fit)
 PNC_cov_amelia = amelia_fit$imputations[[1]]

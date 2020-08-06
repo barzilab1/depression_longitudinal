@@ -201,7 +201,6 @@ do_crossvalidate_spls_covars_perm_par = function(fold_index, input, maxcomp, clu
               y.test = y.test, 
               y.test.orig = y.test.orig,
               nfeatures.perm = nfeatures.perm,
-              coefs = coefs,
               eta.iter = eta.iter, 
               K.iter = K.iter,
               preprocessing = preprocessing,
