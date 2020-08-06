@@ -228,6 +228,16 @@ PNC_cognitive_raw = PNC_cognitive_raw[-c(which(rowSums(is.na(PNC_cognitive_raw))
 sum(is.na(PNC_cognitive_raw))/(ncol(PNC_cognitive_raw)*nrow(PNC_cognitive_raw)) 
 
 
+names_cog_raw = names(PNC_cognitive_raw)
+domains_names = list()
+
+domains_names$memory = grep(pattern = "^(cpf|cpw|volt)",names_cog_raw, ignore.case = T)
+domains_names$social_cognition = grep(pattern = "^(adt|er40|medf)",names_cog_raw, ignore.case = T)
+domains_names$executive = grep(pattern = "^(lnb|pcpt)",names_cog_raw, ignore.case = T)
+domains_names$complex_cognition = grep(pattern = "^(pvrt|pmat|pcet|plot)",names_cog_raw, ignore.case = T)
+domains_names$motor = grep(pattern = "^(mpraxis|tap)",names_cog_raw, ignore.case = T)
+domains_names$iq =  grep(pattern = "^(wrat)",names_cog_raw, ignore.case = T)
+
 ##########################################
 # amelia
 ##########################################
