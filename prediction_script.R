@@ -38,33 +38,19 @@ NPERM = 100;
 NITER = 100; #bagging
 N_FOLDS = 10
 
-
-for (i in 1:5){
-  cat("\n####################################\n",i,"\n####################################\n")  
-
-      
-  source(paste(getwd(),"Load_DB.R", sep = "/"))
- 
+do_algo <- function(folds, x, y, covars, domain_name = NULL) {
   
   # create a parallel socket clusters
   cl <- makeCluster(NPROCS, type="FORK")
   registerDoParallel(cl)
   
-  #make sure the data and covars are align
-  x= merge(PNC_cov_amelia, PNC_cognitive_raw)
-  x= merge(Y_bucket,x)
-  
-  #create folders of y
-  folds = createFolds(x$PHQ9_Sum_sqrt, k = N_FOLDS)
-  
   cv = foreach(fold_index = seq(length(folds))) %do%        
-    do_crossvalidate_spls_covars_perm_par(fold_index, list(X = x[,12:189], y = x$PHQ9_Sum_sqrt, covars = x[,5:11], 
-                                                             folds = folds
+    do_crossvalidate_spls_covars_perm_par(fold_index, list(X = x, y = y, covars = covars, folds = folds
                                                            # ,subject = mydata.exp$Subject[valid.rows]
-                                                           ), 
-                                            maxcomp = maxcomp, cluster = cl,
-                                            NITER = NITER, NPERM = NPERM)
-    
+    ), 
+    maxcomp = maxcomp, cluster = cl,
+    NITER = NITER, NPERM = NPERM)
+  
   stopCluster(cl)
   
   results = list()
@@ -77,7 +63,7 @@ for (i in 1:5){
   results$y.test = unlist(lapply(cv, function(x){x$y.test}))[order(results$fold)]
   
   y.res=(cbind(y.pred=(results[["y.pred"]]),y.test= results[["y.test"]],y.test.orig=results[["y.test.orig"]],PHQ9_Sum=x$PHQ9_Sum))
-  write.csv(y.res, paste("res/y_res",i,".csv",sep = "" ) , na = "", row.names = F)
+  write.csv(y.res, paste("res/y_res",i,"_",domain_name,".csv",sep = "" ) , na = "", row.names = F)
   
   results$cor.test$perm = apply(results$y.pred.perm, 2, function(x) cor.test(x, results$y.test)$estimate)
   results$cor.test$estimate = results$cor.test$perm[1] # this is the unpermutated prediction
@@ -90,13 +76,30 @@ for (i in 1:5){
   results$coefs = data.frame(coefs.temp, mean = rowMeans(coefs.temp) ) 
   coefs.temp[coefs.temp == 0] = NA
   results$coefs = data.frame(results$coefs, meanNA = rowMeans(coefs.temp,na.rm = T))
-  write.csv(results$coefs, paste("res/coefs_",i,".csv",sep = "" ) , na = "")
+  write.csv(results$coefs, paste("res/coefs",i,domain_name,".csv",sep = "_" ) , na = "")
   
-  coefs.temp = list.cbind(lapply(cv, function(x){x$coefs.perm}))
-  results$coefs.perm = data.frame(coefs.temp, mean = rowMeans(coefs.temp) ) 
-  coefs.temp[coefs.temp == 0] = NA
-  results$coefs.perm = data.frame(results$coefs.perm, meanNA = rowMeans(coefs.temp,na.rm = T))
-  write.csv(results$coefs.perm, paste("res/coefs.perm_",i,".csv",sep = "" ) , na = "")
+}
 
+
+
+for (i in 1:5){
+  cat("\n####################################\n",i,"\n####################################\n")  
+
+      
+  source(paste(getwd(),"Load_DB.R", sep = "/"))
+ 
+  
+  #make sure the data and covars are align
+  x= merge(PNC_cov_amelia, PNC_cognitive_raw)
+  x= merge(Y_bucket,x)
+  
+  #create folders of y
+  folds = createFolds(x$PHQ9_Sum_sqrt, k = N_FOLDS)
+  f_index = which(x$sex == 1)
+  
+  do_algo(folds, x[f_index,12:189], x$PHQ9_Sum_sqrt[f_index], x[f_index,5:11], "female")
+  do_algo(folds, x[-f_index,12:189], x$PHQ9_Sum_sqrt[-f_index], x[-f_index,5:11], "female")
+  
+  
 }
   
