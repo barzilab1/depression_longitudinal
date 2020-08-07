@@ -20,13 +20,13 @@ library(caret)
 library(rlist)
 # library(rjson)
 # library(abind)
-library("readr")
-library("psych")
-# library("car")
-# library("rcompanion")
-library("Amelia")
-library("qgraph")
-library("missForest")
+library(readr)
+library(psych)
+# library(car)
+# library(rcompanion)
+library(Amelia)
+library(qgraph)
+library(missForest)
 
 
 source(paste(getwd(),"aux_pls.R", sep = "/"))
@@ -69,6 +69,7 @@ do_algo <- function(folds, x, y, covars, domain_name = NULL, i) {
   results$cor.test$estimate = results$cor.test$perm[1] # this is the unpermutated prediction
   results$cor.test$p.value = sum(results$cor.test$perm[1] <= results$cor.test$perm)/length(results$cor.test$perm)
   
+  cat("\n##################",domain_name,"################\n")
   print(results$cor.test)
   
   
