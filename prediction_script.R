@@ -38,7 +38,7 @@ NPERM = 100;
 NITER = 100; #bagging
 N_FOLDS = 10
 
-do_algo <- function(folds, x, y, covars, domain_name = NULL) {
+do_algo <- function(folds, x, y, covars, domain_name = NULL, i) {
   
   # create a parallel socket clusters
   cl <- makeCluster(NPROCS, type="FORK")
@@ -98,12 +98,12 @@ for (i in 1:5){
   
   domains = x[,12:189]
   
-  do_algo(folds, domains[,-domains_names$memory], x$PHQ9_Sum_sqrt, x[,5:11], "memory")
-  do_algo(folds, domains[,-domains_names$social_cognition], x$PHQ9_Sum_sqrt, x[,5:11], "social_cognition")
-  do_algo(folds, domains[,-domains_names$executive], x$PHQ9_Sum_sqrt, x[,5:11], "executive")
-  do_algo(folds, domains[,-domains_names$complex_cognition], x$PHQ9_Sum_sqrt, x[,5:11], "complex_cognition")
-  do_algo(folds, domains[,-domains_names$motor], x$PHQ9_Sum_sqrt, x[,5:11], "motor")
-  do_algo(folds, domains[,-domains_names$iq], x$PHQ9_Sum_sqrt, x[,5:11], "iq")
+  do_algo(folds, domains[,-domains_names$memory], x$PHQ9_Sum_sqrt, x[,5:11], "memory", i)
+  do_algo(folds, domains[,-domains_names$social_cognition], x$PHQ9_Sum_sqrt, x[,5:11], "social_cognition", i)
+  do_algo(folds, domains[,-domains_names$executive], x$PHQ9_Sum_sqrt, x[,5:11], "executive", i)
+  do_algo(folds, domains[,-domains_names$complex_cognition], x$PHQ9_Sum_sqrt, x[,5:11], "complex_cognition", i)
+  do_algo(folds, domains[,-domains_names$motor], x$PHQ9_Sum_sqrt, x[,5:11], "motor", i)
+  do_algo(folds, domains[,-domains_names$iq], x$PHQ9_Sum_sqrt, x[,5:11], "iq", i)
   
   
   
