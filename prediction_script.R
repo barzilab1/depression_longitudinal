@@ -20,13 +20,13 @@ library(caret)
 library(rlist)
 # library(rjson)
 # library(abind)
-library("readr")
-library("psych")
+library(readr)
+library(psych)
 # library("car")
 # library("rcompanion")
-library("Amelia")
-library("qgraph")
-library("missForest")
+library(Amelia)
+library(qgraph)
+library(missForest)
 
 
 source(paste(getwd(),"aux_pls.R", sep = "/"))
@@ -38,7 +38,7 @@ NPERM = 100;
 NITER = 100; #bagging
 N_FOLDS = 10
 
-do_algo <- function(folds, x, y, covars, domain_name = NULL) {
+do_algo <- function(folds, x, y, covars, domain_name = NULL,i) {
   
   # create a parallel socket clusters
   cl <- makeCluster(NPROCS, type="FORK")
@@ -81,25 +81,26 @@ do_algo <- function(folds, x, y, covars, domain_name = NULL) {
 }
 
 
-
 for (i in 1:5){
   cat("\n####################################\n",i,"\n####################################\n")  
 
-      
   source(paste(getwd(),"Load_DB.R", sep = "/"))
- 
   
   #make sure the data and covars are align
   x= merge(PNC_cov_amelia, PNC_cognitive_raw)
   x= merge(Y_bucket,x)
-  
-  #create folders of y
-  folds = createFolds(x$PHQ9_Sum_sqrt, k = N_FOLDS)
   f_index = which(x$sex == 1)
+  x_f = x[f_index, ! names(x) %in% c("sex")]
+  x_m = x[-f_index, ! names(x) %in% c("sex")]
   
-  do_algo(folds, x[f_index,12:189], x$PHQ9_Sum_sqrt[f_index], x[f_index,5:11], "female")
-  do_algo(folds, x[-f_index,12:189], x$PHQ9_Sum_sqrt[-f_index], x[-f_index,5:11], "female")
+  #female
+  folds_f = createFolds(x_f$PHQ9_Sum_sqrt, k = N_FOLDS)
+  do_algo(folds_f, x_f[,11:188], x_f$PHQ9_Sum_sqrt, x_f[,5:10], "female", i)
   
+  #male
+  folds_m = createFolds(x_m$PHQ9_Sum_sqrt, k = N_FOLDS)
+  do_algo(folds_m, x_m[,11:188], x_m$PHQ9_Sum_sqrt, x_m[,5:10], "male", i)
   
 }
+
   
