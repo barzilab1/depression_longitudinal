@@ -129,9 +129,6 @@ do_crossvalidate_spls_covars_perm_par = function(fold_index, input, maxcomp, clu
   subject = input$subject[-fold]
   if (!is.null(group)) group = input$group[-fold]
   
-  #when there are a lot of predictors, reduce the number
-  nonzero = apply(X, 2, sd, na.rm= T) > 0
-  
   print(paste("Fold index", fold_index))
   
   X.train = as.matrix(X[-fold, , drop=FALSE])
@@ -143,6 +140,9 @@ do_crossvalidate_spls_covars_perm_par = function(fold_index, input, maxcomp, clu
   #imput missing data in X
   X.train = missForest(X.train, variablewise = TRUE)$ximp
   X.test = missForest(X.test, variablewise = TRUE)$ximp
+  
+  #when there are a lot of predictors, reduce the number
+  nonzero = apply(X.train, 2, sd, na.rm= T) > 0
   
   # demean and scale only according to the train data
   mu = colMeans(X.train) 
