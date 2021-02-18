@@ -80,7 +80,7 @@ second step:
 1. check each domain contribution. 
 the domains were selected according to Tyler's factor analysis:
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4345134/
-as the data includes both accuracy and speed, the domains were choosen according to the Confirmatory bifactor model of the CNB Efficiency scores.
+as the data includes both accuracy and speed, the domains were choosen according to the Confirmatory bifactor model of the CNB Efficiency scores. (table 3)
 in total 6 domains:
     1. memory [40]  
     2. social cognition [63]
@@ -92,5 +92,8 @@ in total 6 domains:
 
 2. check sex influence  
  
- 
+---
+last step:
+1. memory domin was divided to its 3 tests
+2. all the dataset was run with SES factor
 

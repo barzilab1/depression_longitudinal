@@ -1,8 +1,12 @@
+library(readr)
+library(Amelia)
 
 #read the CSVs 
 PHQ_Data = read_csv("Data/PHQ9_file_for_Elina_with_PNC_FH.csv")
 PNC_Core_Data_demographics = read_csv("Data/PNC_Core_Data_demographics.csv")
 PNC_diagnoses = read_csv("Data/PNC_diagnoses.csv")
+# PNC_SES_factor_score <- read_csv("Data/PNC_SES_factor_score.csv")
+
 
 PNC_Core_Data_cognitive = read_csv("Data/PNC_Core_Data_cognitive.csv")
 PNC_Core_Data_cognitive_ALTERNATIVE = read_csv("Data/PNC_Core_Data_cognitive_ALTERNATIVE.csv")
@@ -47,6 +51,7 @@ Y_bucket$PHQ9_Sum_sqrt = sqrt(Y_bucket$PHQ9_Sum)
 PNC_cov = merge(PHQ_Data[,c("bblid", "goassessPhqDurMonths")], PNC_Core_Data_demographics[,c(1,2,4,6:7,11)])
 PNC_cov = merge(Y_bucket[,c("bblid")], PNC_cov)
 PNC_cov = merge(PNC_cov, PNC_diagnoses[,c("bblid", "smry_dep")])
+# PNC_cov = merge(PNC_cov, PNC_SES_factor_score)
 summary(PNC_cov)
 
 #missing cnb age will be the goassess1 age
@@ -231,87 +236,9 @@ sum(is.na(PNC_cognitive_raw))/(ncol(PNC_cognitive_raw)*nrow(PNC_cognitive_raw))
 names_cog_raw = names(PNC_cognitive_raw)
 domains_names = list()
 
-domains_names$memory = grep(pattern = "^(cpf|cpw|volt)",names_cog_raw, ignore.case = T)
-domains_names$social_cognition = grep(pattern = "^(adt|er40|medf)",names_cog_raw, ignore.case = T)
-domains_names$executive = grep(pattern = "^(lnb|pcpt)",names_cog_raw, ignore.case = T)
-domains_names$complex_cognition = grep(pattern = "^(pvrt|pmat|pcet|plot)",names_cog_raw, ignore.case = T)
-domains_names$motor = grep(pattern = "^(mpraxis|tap)",names_cog_raw, ignore.case = T)
-domains_names$iq =  grep(pattern = "^(wrat)",names_cog_raw, ignore.case = T)
-
-##########################################
-# amelia
-##########################################
-# remove cor items
-# adt_cr = adt_f_cr + adt_m_cr = adt_ca_cr + adt_nonca_cr ~ adt_same_cr + adt_ns_cr
-# cpf_w_rter = (cpf_fnrt + cpf_fprt)/2
-# cpf_w_rtcr = (cpf_tnrt + cpf_tprt)/2
-# cpf_cr = cpf_tn + cpf_tp | er = fp+fn | tn+fp = tp+fn | cr+ er = 1 | tp+tn + fp+fn =1
-# cpw_cr = cpw_tn + cpw_tp
-# cpw_w_rtcr = (cpw_tprt + cpw_tnrt)/2
-# er40_cr  = er40_f_cr + er40_m_cr
-# medf_cr = medf_m_cr + medf_f_cr = medf_hap_cr +medf_ang_cr+ medf_fear_cr + medf_sad_cr = medf_ca_cr + medf_nonca_cr ~ medf_same_cr + medf_ns_cr
-# volt_w_rtcr = (volt_tprt + volt_tnrt)/2
-# lnb_tp = lnb_tp0 + lnb_tp1 + lnb_tp2
-# PNC_cognitive_raw = PNC_cognitive_raw[,! names(PNC_cognitive_raw) %in% c("adt_er", "pvrt_pc", "lnb_tp0",
-#                                                                          "adt_nonca_cr", "tap_tot", "lnb_tp2",
-#                                                                          "adt_m_cr", "cpw_tnrt", "lnb_fp2",
-#                                                                          "adt_ns_cr", "cpw_fp", "pcet_num",
-#                                                                          "cpf_er", "cpw_fn", "pcpt_n_tn",
-#                                                                          "cpf_cr", "medf_er", "pcpt_n_fn",
-#                                                                          "cpf_tnrt", "medf_sad_cr", "pcpt_l_tn",
-#                                                                          "cpf_fp", "medf_m_cr", "pcpt_l_fn",
-#                                                                          "cpf_fn", "medf_nonca_cr", "pcpt_t_tp",
-#                                                                          "cpf_fnrt", "medf_ns_cr", "pcpt_t_fp",
-#                                                                          "er40_noe_cr", "volt_er", "pcpt_t_tn",
-#                                                                          "er40_m_cr", "volt_fp", "pcpt_t_fn",
-#                                                                          "cpw_er", "volt_tn", "wrat_cr_letter",
-#                                                                          "cpw_tn", "volt_tnrt", "wrat_cr_word")]
-# 
-# 
-# 
-# summary(PNC_cognitive_raw)  
-# #NA% < 3%
-# sum(is.na(PNC_cognitive_raw))/(ncol(PNC_cognitive_raw)*nrow(PNC_cognitive_raw))  
-# 
-# 
-# names_cog_raw = names(PNC_cognitive_raw)
-# index_response = grep(pattern = "_(cr|er|si|nr|num|cat|resp|off)$|_cr_|pvrt_rt$|(f|s)_tot$",names_cog_raw, ignore.case = T)
-# index_tp_tn_fp_fn = grep(pattern = "_(tp[0-2]?|tn|fp[0-2]?|fn)$",names_cog_raw, ignore.case = T)
-# 
-# indexes_to_bound = which(names(PNC_cognitive_raw) %in% c("adt_rter", "adt_ca_rter", "adt_nonca_rter", "adt_same_rtcr", "pvrt_rter", "medf_rter", 
-#                                                          "medf_hap_rter", "medf_ang_rter", "medf_fear_rter", "medf_sad_rter", "medf_same_rtcr" ,"pmat_rtcr", 
-#                                                          "pmat_rter", "pmat_rt", "tap_domsd", "tap_nonsd", "tap_excess_std" ,"pcet_acc2","plot_rter","plot_rt"  ))
-# 
-# 
-# bounds = cbind(indexes_to_bound,0,Inf)
-# 
-# 
-# #imputation 
-# set.seed(124)
-# amelia_fit <- amelia(PNC_cognitive_raw,m=1, idvars=c("bblid"), ords = c(index_response,index_tp_tn_fp_fn), bounds = bounds)
-# summary(amelia_fit)
-# PNC_cognitive_amelia = amelia_fit$imputations[[1]]
-# summary(PNC_cognitive_amelia)
-# 
-# #data below 0
-# which(apply(PNC_cognitive_raw,2,min,na.rm = T) < 0)
-# which(apply(PNC_cognitive_amelia,2,min,na.rm = T) < 0)
-# 
-# #remove bblids also from the data and Y
-# Y_bucket = merge(Y_bucket, PNC_cognitive_raw[,1, drop=FALSE])
-# PNC_data = merge(PNC_data, PNC_cognitive_raw[,1, drop=FALSE])
-# PNC_data_amelia = merge(PNC_data_amelia, PNC_cognitive_raw[,1, drop=FALSE])
-
-# boxplot(PNC_cognitive_raw[,-c(1,index_response,index_tp_tn_fp_fn)])
-# boxplot(PNC_cognitive_raw[,c("pcet_rtcr","plot_rt")])
-# #hist of all variables not ord 
-# temp = PNC_cognitive_raw
-# temp[,-c(1,index_response,index_tp_tn_fp_fn)] = winsor(PNC_cognitive_raw[,-c(1,index_response,index_tp_tn_fp_fn)],trim=0.005)
-# temp %>%
-#   keep(is.numeric) %>%
-#   gather() %>%
-#   ggplot(aes(value)) +
-#   facet_wrap(~ key, scales = "free") +
-#   geom_histogram()
-
-  
+domains_names$memory = names_cog_raw[grepl(pattern = "^(cpf|cpw|volt)",names_cog_raw, ignore.case = T)]
+domains_names$social_cognition = names_cog_raw[grep(pattern = "^(adt|er40|medf)",names_cog_raw, ignore.case = T)]
+domains_names$executive = names_cog_raw[grep(pattern = "^(lnb|pcpt)",names_cog_raw, ignore.case = T)]
+domains_names$complex_cognition = names_cog_raw[grep(pattern = "^(pvrt|pmat|pcet|plot)",names_cog_raw, ignore.case = T)]
+domains_names$motor = names_cog_raw[grep(pattern = "^(mpraxis|tap)",names_cog_raw, ignore.case = T)]
+domains_names$iq = names_cog_raw[grep(pattern = "^(wrat)",names_cog_raw, ignore.case = T)]

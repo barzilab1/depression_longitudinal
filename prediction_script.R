@@ -1,44 +1,24 @@
 ######## Prediction functions ##########################
 
 library(spls)
-# library(mediation)
-# library(foreach)
 library(doParallel)
-# library(doMC)
 library(caret)
-# library(pracma)
-# library(reshape2)
-# library(dplyr)
-# library(oro.nifti)
-# library(RColorBrewer)
-# library(scales)
-# ###library(ppcor)
-# library(lavaan)
-# library(RVAideMemoire)
-# library(psychometric)
-# library(boot)
 library(rlist)
-# library(rjson)
-# library(abind)
-library(readr)
 library(psych)
-# library(car)
-# library(rcompanion)
-library(Amelia)
 library(qgraph)
 library(missForest)
-
+library(openxlsx)
 
 source(paste(getwd(),"aux_pls.R", sep = "/"))
 
 
 NPROCS = detectCores() ;
 maxcomp = 178 # max number of k in spls. should take all predictors as we don't have too many 
-NPERM = 100; 
-NITER = 100; #bagging
+NPERM = 500; 
+NITER = 500; #bagging
 N_FOLDS = 10
 
-do_algo <- function(folds, x, y, covars, domain_name = NULL, i) {
+do_algo <- function(folds, x, y, covars, domain_name = NULL, i = 0) {
   
   # create a parallel socket clusters
   cl <- makeCluster(NPROCS, type="FORK")
@@ -62,28 +42,43 @@ do_algo <- function(folds, x, y, covars, domain_name = NULL, i) {
   results$y.pred = unlist(lapply(cv, function(x){x$y.pred}))[order(results$fold)]
   results$y.test = unlist(lapply(cv, function(x){x$y.test}))[order(results$fold)]
   
-  y.res=(cbind(y.pred=(results[["y.pred"]]),y.test= results[["y.test"]],y.test.orig=results[["y.test.orig"]],PHQ9_Sum=x$PHQ9_Sum))
-  write.csv(y.res, paste("res/y_res",i,"_",domain_name,".csv",sep = "" ) , na = "", row.names = F)
+  # y.res=(cbind(y.pred=(results[["y.pred"]]),y.test= results[["y.test"]],y.test.orig=results[["y.test.orig"]],PHQ9_Sum=x$PHQ9_Sum))
+  # write.csv(y.res, paste("res/y_res",i,"_",domain_name,".csv",sep = "" ) , na = "", row.names = F)
   
   results$cor.test$perm = apply(results$y.pred.perm, 2, function(x) cor.test(x, results$y.test)$estimate)
   results$cor.test$estimate = results$cor.test$perm[1] # this is the unpermutated prediction
   results$cor.test$p.value = sum(results$cor.test$perm[1] <= results$cor.test$perm)/length(results$cor.test$perm)
   
   cat("\n##################",domain_name,"################\n")
+  print("col names:")
+  print(colnames(x))
+  
   print(results$cor.test)
   
   
-  coefs.temp = list.cbind(lapply(cv, function(x){x$coefs}))
-  results$coefs = data.frame(coefs.temp, mean = rowMeans(coefs.temp) ) 
-  coefs.temp[coefs.temp == 0] = NA
-  results$coefs = data.frame(results$coefs, meanNA = rowMeans(coefs.temp,na.rm = T))
-  write.csv(results$coefs, paste("res/coefs",i,domain_name,".csv",sep = "_" ) , na = "")
+  # coefs.temp = list.cbind(lapply(cv, function(x){x$coefs}))
+  # results$coefs = data.frame(coefs.temp, mean = rowMeans(coefs.temp) ) 
+  # coefs.temp[coefs.temp == 0] = NA
+  # results$coefs = data.frame(results$coefs, meanNA = rowMeans(coefs.temp,na.rm = T))
+  # write.csv(results$coefs, paste("res/coefs",i,domain_name,".csv",sep = "_" ) , na = "")
+  
+  ###### permotations check, all should be the same
+  
+  # wb = createWorkbook()
+  # 
+  # for(j in 1:N_FOLDS){
+  #   addWorksheet(wb, j)
+  #   writeData(wb, j, as.data.frame(cv[[j]][["mysample.perm"]]))
+  # }
+  # 
+  # saveWorkbook(wb, paste0("res/",domain_name,"_",i,"_","permotation.xlsx"), overwrite = TRUE)
+  
   
 }
 
 
 
-for (i in 1:5){
+for (i in 1:3){
   cat("\n####################################\n",i,"\n####################################\n")  
 
       
@@ -97,15 +92,22 @@ for (i in 1:5){
   #create folders of y
   folds = createFolds(x$PHQ9_Sum_sqrt, k = N_FOLDS)
   
+  #' when running without SES:
+  #' domains = x[,12:189]
+  #' covs (in the do_algo func) = x[,5:11]
   domains = x[,12:189]
   
-  do_algo(folds, domains[,-domains_names$memory], x$PHQ9_Sum_sqrt, x[,5:11], "memory", i)
-  do_algo(folds, domains[,-domains_names$social_cognition], x$PHQ9_Sum_sqrt, x[,5:11], "social_cognition", i)
-  do_algo(folds, domains[,-domains_names$executive], x$PHQ9_Sum_sqrt, x[,5:11], "executive", i)
-  do_algo(folds, domains[,-domains_names$complex_cognition], x$PHQ9_Sum_sqrt, x[,5:11], "complex_cognition", i)
-  do_algo(folds, domains[,-domains_names$motor], x$PHQ9_Sum_sqrt, x[,5:11], "motor", i)
-  do_algo(folds, domains[,-domains_names$iq], x$PHQ9_Sum_sqrt, x[,5:11], "iq", i)
-  
+  do_algo(folds, x[,12:189], x$PHQ9_Sum_sqrt, x[,5:11], "all", i)
+  do_algo(folds, domains[,!(colnames(domains) %in% domains_names$memory)], x$PHQ9_Sum_sqrt, x[,5:11], "memory", i)
+  do_algo(folds, domains[,!(colnames(domains) %in% domains_names$social_cognition)], x$PHQ9_Sum_sqrt, x[,5:11], "social_cognition", i)
+  do_algo(folds, domains[,!(colnames(domains) %in% domains_names$executive)], x$PHQ9_Sum_sqrt, x[,5:11], "executive", i)
+  do_algo(folds, domains[,!(colnames(domains) %in% domains_names$complex_cognition)], x$PHQ9_Sum_sqrt, x[,5:11], "complex_cognition", i)
+  do_algo(folds, domains[,!(colnames(domains) %in% domains_names$motor)], x$PHQ9_Sum_sqrt, x[,5:11], "motor", i)
+  do_algo(folds, domains[,!(colnames(domains) %in% domains_names$iq)], x$PHQ9_Sum_sqrt, x[,5:11], "iq", i)
+
+  do_algo(folds, domains[,grep("^cpf" ,domains_names$memory, value = T)], x$PHQ9_Sum_sqrt, x[,5:11], "FACE MEMORY", i)
+  do_algo(folds, domains[,grep("^cpw" ,domains_names$memory, value = T)], x$PHQ9_Sum_sqrt, x[,5:11], "Verbal Memory", i)
+  do_algo(folds, domains[,grep("^volt" ,domains_names$memory, value = T)], x$PHQ9_Sum_sqrt, x[,5:11], "Spatial Memory", i)
   
   
 }
